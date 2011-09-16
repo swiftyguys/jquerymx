@@ -1,0 +1,20 @@
+steal('jquery/model', function(){
+
+/**
+ * @parent index
+ * @inherits jQuery.Model
+ * Wraps backend <%=underscore%> services.  
+ */
+$.Model('<%=name%>',
+/* @Static */
+{
+	findAll: "/<%= plural %>.json",
+  	findOne : "/<%= plural %>/{id}.json", 
+  	create : "/<%= plural %>.json",
+ 	update : "/<%= plural %>/{id}.json",
+  	destroy : "/<%= plural %>/{id}.json"
+},
+/* @Prototype */
+{});
+
+})

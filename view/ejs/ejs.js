@@ -2,7 +2,7 @@
 
 
 
-steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
+steal('jquery/view', 'jquery/lang/string/rsplit').then(function( $ ) {
 	var myEval = function(script){
 			eval(script);
 		},
@@ -14,6 +14,14 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 		isArray = $.isArray,
 		clean = function( content ) {
 				return content.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"');
+		},
+		// from prototype  http://www.prototypejs.org/
+		escapeHTML = function(content){
+			return content.replace(/&/g,'&amp;')
+					.replace(/</g,'&lt;')
+					.replace(/>/g,'&gt;')
+					.replace(/"/g, '&#34;')
+					.replace(/'/g, "&#39;");
 		},
 		EJS = function( options ) {
 			//returns a renderer function
@@ -45,8 +53,11 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 	 * Ejs provides <a href="http://www.ruby-doc.org/stdlib/libdoc/erb/rdoc/">ERB</a> 
 	 * style client side templates.  Use them with controllers to easily build html and inject
 	 * it into the DOM.
-	 * <h3>Example</h3>
+	 * 
+	 * ###  Example
+	 * 
 	 * The following generates a list of tasks:
+	 * 
 	 * @codestart html
 	 * &lt;ul>
 	 * &lt;% for(var i = 0; i < tasks.length; i++){ %>
@@ -54,37 +65,53 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 	 * &lt;% } %>
 	 * &lt;/ul>
 	 * @codeend
-	 * For the following examples, we assume this view is in <i>'views\tasks\list.ejs'</i>
-	 * <h2>Use</h2>
-	 * There are 2 common ways to use Views: 
-	 * <ul>
-	 *     <li>Controller's [jQuery.Controller.prototype.view view function]</li>
-	 *     <li>The jQuery Helpers: [jQuery.fn.after after], 
-	 *                             [jQuery.fn.append append], 
-	 *                             [jQuery.fn.before before], 
-	 *                             [jQuery.fn.before html], 
-	 *                             [jQuery.fn.before prepend], 
-	 *                             [jQuery.fn.before replace], and 
-	 *                             [jQuery.fn.before text].</li>
-	 * </ul>
-	 * <h3>View</h3>
-	 * jQuery.Controller.prototype.view is the preferred way of rendering a view.  
-	 * You can find all the options for render in 
-	 * its [jQuery.Controller.prototype.view documentation], but here is a brief example of rendering the 
-	 * <i>list.ejs</i> view from a controller:
-	 * @codestart
-	 * $.Controller.extend("TasksController",{
-	 *     init: function( el ) {
-	 *         Task.findAll({},this.callback('list'))
-	 *     },
-	 *     list: function( tasks ) {
-	 *         this.element.html(
-	 *          this.view("list", {tasks: tasks})
-	 *        )
-	 *     }
-	 * })
-	 * @codeend
 	 * 
+	 * For the following examples, we assume this view is in <i>'views\tasks\list.ejs'</i>.
+	 * 
+	 * 
+	 * ## Use
+	 * 
+	 * ### Loading and Rendering EJS:
+	 * 
+	 * You should use EJS through the helper functions [jQuery.View] provides such as:
+	 * 
+	 *   - [jQuery.fn.after after]
+	 *   - [jQuery.fn.append append]
+	 *   - [jQuery.fn.before before]
+	 *   - [jQuery.fn.html html], 
+	 *   - [jQuery.fn.prepend prepend],
+	 *   - [jQuery.fn.replaceWith replaceWith], and 
+	 *   - [jQuery.fn.text text].
+	 * 
+	 * or [jQuery.Controller.prototype.view].
+	 * 
+	 * ### Syntax
+	 * 
+	 * EJS uses 5 types of tags:
+	 * 
+	 *   - <code>&lt;% CODE %&gt;</code> - Runs JS Code.
+	 *     For example:
+	 *     
+	 *         <% alert('hello world') %>
+	 *     
+	 *   - <code>&lt;%= CODE %&gt;</code> - Runs JS Code and writes the _escaped_ result into the result of the template.
+	 *     For example:
+	 *     
+	 *         <h1><%= 'hello world' %></h1>
+	 *         
+	 *   - <code>&lt;%== CODE %&gt;</code> - Runs JS Code and writes the _unescaped_ result into the result of the template.
+	 *     For example:
+	 *     
+	 *         <h1><%== '<span>hello world</span>' %></h1>
+	 *         
+	 *   - <code>&lt;%%= CODE %&gt;</code> - Writes <%= CODE %> to the result of the template.  This is very useful for generators.
+	 *     
+	 *         <%%= 'hello world' %>
+	 *         
+	 *   - <code>&lt;%# CODE %&gt;</code> - Used for comments.  This does nothing.
+	 *     
+	 *         <%# 'hello world' %>
+	 *        
 	 * ## Hooking up controllers
 	 * 
 	 * After drawing some html, you often want to add other widgets and plugins inside that html.
@@ -221,7 +248,16 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 		}
 		return input.toString ? input.toString() : "";
 	};
-
+	EJS.clean = function(text){
+		//return sanatized text
+		if(typeof text == 'string'){
+			return escapeHTML(text);
+		} else if(typeof text == 'number') {
+			return text;
+		} else {
+			return EJS.text(text);
+		}
+	}
 	//returns something you can call scan on
 	var scan = function(scanner, source, block ) {
 		var source_split = rSplit(source, /\n/),
@@ -249,13 +285,14 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 			right: '%' + right,
 			dLeft: left + '%%',
 			dRight: '%%' + right,
+			eeLeft : left + '%==',
 			eLeft: left + '%=',
 			cmnt: left + '%#',
 			scan : scan,
 			lines : 0
 		});
-		scanner.splitter = new RegExp("(" + [scanner.dLeft, scanner.dRight, scanner.eLeft, 
-		scanner.cmnt, scanner.left, scanner.right + '\n', scanner.right, '\n'].join(")|(").
+		scanner.splitter = new RegExp("(" + [scanner.dLeft, scanner.dRight, scanner.eeLeft, scanner.eLeft, 
+			scanner.cmnt, scanner.left, scanner.right + '\n', scanner.right, '\n'].join(")|(").
 			replace(/\[/g,"\\[").replace(/\]/g,"\\]") + ")");
 		return scanner;
 	},
@@ -290,6 +327,7 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 						break;
 					case scanner.left:
 					case scanner.eLeft:
+					case scanner.eeLeft:
 					case scanner.cmnt:
 						startTag = token;
 						if ( content.length > 0 ) {
@@ -322,6 +360,9 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 							}
 							break;
 						case scanner.eLeft:
+							buff.push(insert_cmd, "(jQuery.EJS.clean(", content, ")));");
+							break;
+						case scanner.eeLeft:
 							buff.push(insert_cmd, "(jQuery.EJS.text(", content, ")));");
 							break;
 						}
@@ -425,6 +466,32 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 	 * @parent jQuery.EJS
 	 * By adding functions to jQuery.EJS.Helpers.prototype, those functions will be available in the 
 	 * views.
+	 * 
+	 * The following helper converts a given string to upper case:
+	 * 
+	 * 	$.EJS.Helpers.prototype.toUpper = function(params)
+	 * 	{
+	 * 		return params.toUpperCase();
+	 * 	}
+	 * 
+	 * Use it like this in any EJS template:
+	 * 
+	 * 	<%= toUpper('javascriptmvc') %>
+	 * 
+	 * To access the current DOM element return a function that takes the element as a parameter:
+	 * 
+	 * 	$.EJS.Helpers.prototype.upperHtml = function(params)
+	 * 	{
+	 * 		return function(el) {
+	 * 			$(el).html(params.toUpperCase());
+	 * 		}
+	 * 	}
+	 * 
+	 * In your EJS view you can then call the helper on an element tag:
+	 * 
+	 * 	<div <%= upperHtml('javascriptmvc') %>></div>
+	 * 
+	 * 
 	 * @constructor Creates a view helper.  This function is called internally.  You should never call it.
 	 * @param {Object} data The data passed to the view.  Helpers have access to it through this._data
 	 */
@@ -436,7 +503,7 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 	/* @prototype*/
 	EJS.Helpers.prototype = {
 		/**
-		 * Makes a plugin
+		 * Hooks up a jQuery plugin on.
 		 * @param {String} name the plugin name
 		 */
 		plugin: function( name ) {
@@ -463,7 +530,8 @@ steal.plugins('jquery/view', 'jquery/lang/rsplit').then(function( $ ) {
 		//returns a function that renders the view
 		script: function( id, src ) {
 			return "jQuery.EJS(function(_CONTEXT,_VIEW) { " + new EJS({
-				text: src
+				text: src,
+				name: id
 			}).template.out + " })";
 		},
 		renderer: function( id, text ) {

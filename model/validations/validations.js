@@ -1,7 +1,7 @@
-steal.plugins('jquery/model').then(function($){
+steal('jquery/model').then(function($){
 /**
 @page jquery.model.validations Validations
-@plugin jquery/mode/validations
+@plugin jquery/model/validations
 @download  http://jmvcsite.heroku.com/pluginify?plugins[]=jquery/model/validations/validations.js
 @test jquery/model/validations/qunit.html
 @parent jQuery.Model
@@ -147,7 +147,7 @@ $.extend($.Model, {
     */
    validatePresenceOf: function(attrNames, options) {
       validate.call(this, attrNames, options, function(value) {
-         if(typeof value == 'undefined' || value == "")
+         if(typeof value == 'undefined' || value == "" || value === null)
             return "can't be empty";
       });
    },
