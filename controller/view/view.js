@@ -1,4 +1,6 @@
 steal('jquery/controller', 'jquery/view').then(function( $ ) {
+	var URI = steal.URI || steal.File;
+	
 	jQuery.Controller.getFolder = function() {
 		return jQuery.String.underscore(this.fullName.replace(/\./g, "/")).replace("/Controllers", "");
 	};
@@ -12,17 +14,17 @@ steal('jquery/controller', 'jquery/view').then(function( $ ) {
 		var classPartsWithoutPrefixSlashes = classPartsWithoutPrefix.join('/'),
 			hasControllers = (classParts.length > 2) && classParts[1] == 'Controllers',
 			path = hasControllers? jQuery.String.underscore(classParts[0]): jQuery.String.underscore(classParts.join("/")),
-			controller_name = classPartsWithoutPrefix.join('/').toLowerCase(),
+			controller_name = jQuery.String.underscore(classPartsWithoutPrefix.join('/')).toLowerCase(),
 			suffix = (typeof view == "string" && /\.[\w\d]+$/.test(view)) ? "" : jQuery.View.ext;
 			
 		//calculate view
 		if ( typeof view == "string" ) {
 			if ( view.substr(0, 2) == "//" ) { //leave where it is
 			} else {
-				view = "//" + new steal.File('views/' + (view.indexOf('/') !== -1 ? view : (hasControllers ? controller_name + '/' : "") + view)).joinFrom(path) + suffix;
+				view = "//" + URI(path).join( 'views/' + (view.indexOf('/') !== -1 ? view : (hasControllers ? controller_name + '/' : "") + view)) + suffix;
 			}
 		} else if (!view ) {
-			view = "//" + new steal.File('views/' + (hasControllers ? controller_name + '/' : "") + action_name.replace(/\.|#/g, '').replace(/ /g, '_')).joinFrom(path) + suffix;
+			view = "//" + URI(path).join('views/' + (hasControllers ? controller_name + '/' : "") + action_name.replace(/\.|#/g, '').replace(/ /g, '_'))+ suffix;
 		}
 		return view;
 	};
@@ -43,14 +45,16 @@ steal('jquery/controller', 'jquery/view').then(function( $ ) {
 			}
 			//load from name
 			var current = window;
-			var parts = this.Class.fullName.split(/\./);
+			var parts = this.constructor.fullName.split(/\./);
 			for ( var i = 0; i < parts.length; i++ ) {
-				if ( typeof current.Helpers == 'object' ) {
-					jQuery.extend(helpers, current.Helpers);
+				if(current){
+					if ( typeof current.Helpers == 'object' ) {
+						jQuery.extend(helpers, current.Helpers);
+					}
+					current = current[parts[i]];
 				}
-				current = current[parts[i]];
 			}
-			if ( typeof current.Helpers == 'object' ) {
+			if (current && typeof current.Helpers == 'object' ) {
 				jQuery.extend(helpers, current.Helpers);
 			}
 			this._default_helpers = helpers;

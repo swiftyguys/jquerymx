@@ -1,3 +1,4 @@
+steal('funcunit/qunit','jquery/view/ejs', function(){
 module("jquery/view/ejs, rendering",{
 	setup : function(){
 
@@ -80,7 +81,49 @@ test("unescapedContent", function(){
 	
 	var div = $('<div/>').html(compiled)
 	equals(div.find('span').text(), "foobar" );
-	equals(div.find('div').text(), "<strong>foo</strong><strong>bar</strong>" );
-	equals(div.find('span').html(), "<strong>foo</strong><strong>bar</strong>" );
+	equals(div.find('div').text().toLowerCase(), "<strong>foo</strong><strong>bar</strong>" );
+	equals(div.find('span').html().toLowerCase(), "<strong>foo</strong><strong>bar</strong>" );
 	equals(div.find('input').val(), "I use 'quote' fingers \"a lot\"" );
+});
+
+test("returning blocks", function(){
+	var somethingHelper = function(cb){
+		return cb([1,2,3,4])
+	}
+	
+	var res = $.View("//jquery/view/ejs/test_template.ejs",{something: somethingHelper, 
+		items: ['a','b']});
+	// make sure expected values are in res
+	ok(/\s4\s/.test(res), "first block called" );
+	equals(res.match(/ItemsLength4/g).length, 4, "innerBlock and each")
+});
+
+test("easy hookup", function(){
+	var div = $('<div/>').html("//jquery/view/ejs/easyhookup.ejs",{text: "yes"})
+	ok( div.find('div').hasClass('yes'), "has yes" )
+});
+
+test("helpers", function() {
+	$.EJS.Helpers.prototype.simpleHelper = function()
+	{
+		return 'Simple';
+	}
+	
+	$.EJS.Helpers.prototype.elementHelper = function()
+	{
+		return function(el) {
+			el.innerHTML = 'Simple';
+		}
+	}
+	
+	var text = "<div><%= simpleHelper() %></div>";
+	var compiled = new $.EJS({text: text}).render() ;
+	equals(compiled, "<div>Simple</div>");
+	
+	text = "<div id=\"hookup\" <%= elementHelper() %>></div>";
+	compiled = new $.EJS({text: text}).render() ;
+	$('#qunit-test-area').append($(compiled));
+	equals($('#hookup').html(), "Simple");
+});
+
 })

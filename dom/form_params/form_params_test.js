@@ -2,6 +2,10 @@ steal("jquery/dom/form_params")  //load your app
  .then('funcunit/qunit','jquery/view/micro')  //load qunit
  .then(function(){
 
+$.ajaxSetup({
+	cache : false
+});
+     
 module("jquery/dom/form_params")
 test("with a form", function(){
 
@@ -13,7 +17,9 @@ test("with a form", function(){
 	ok(formParams.params.three === "3","three is right");
 	same(formParams.params.four,["4","1"],"four is right");
 	same(formParams.params.five,["2","3"],"five is right");
-	
+
+	equal(typeof formParams.id , 'string', "Id value is empty");
+
 	
 });
 
@@ -26,7 +32,7 @@ test("with true false", function(){
 	ok(formParams.bar.abc === true, "form bar is true");
 	ok(formParams.bar.def === true, "form def is true");
 	ok(formParams.bar.ghi === undefined, "form def is undefined");
-
+	ok(formParams.wrong === false, "'false' should become false");
 });
 
 test("just strings",function(){
@@ -38,12 +44,26 @@ test("just strings",function(){
 	same(formParams.params.four,["4","1"],"four is right");
 	same(formParams.params.five,['2','3'],"five is right");
 	$("#qunit-test-area").html('')
-})
+});
+
+test("empty string conversion",function() {
+	$("#qunit-test-area").html("//jquery/dom/form_params/test/basics.micro",{});
+	var formParams =  $("#qunit-test-area form").formParams(false) ;
+	ok('' === formParams.empty, 'Default empty string conversion');
+	formParams =  $("#qunit-test-area form").formParams(true);
+	ok(undefined === formParams.empty, 'Default empty string conversion');
+});
 
 test("missing names",function(){
 	$("#qunit-test-area").html("//jquery/dom/form_params/test/checkbox.micro",{});
 	var formParams =  $("#qunit-test-area form").formParams() ;
 	ok(true, "does not break")
+});
+
+test("same input names to array", function() {
+	$("#qunit-test-area").html("//jquery/dom/form_params/test/basics.micro",{});
+	var formParams =  $("#qunit-test-area form").formParams(true);
+	same(formParams.param1, ['first', 'second', 'third']);
 });
 
 });

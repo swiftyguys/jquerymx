@@ -19,6 +19,9 @@ steal('jquery/dom',
 		
 		// if we don't have a fixture, do nothing
 		if(!settings.fixture){
+			if(window.location.protocol === "file:"){
+				steal.dev.log("ajax request to " + settings.url+", no fixture found");
+			}
 			return;
 		}
 		
@@ -32,11 +35,11 @@ steal('jquery/dom',
 			var url = settings.fixture;
 			
 			if (/^\/\//.test(url) ) {
-				url = steal.root.join(settings.fixture.substr(2));
+				url = steal.root.mapJoin(settings.fixture.substr(2))+'';
 			}
-			//@steal-remove-start
+			//!steal-remove-start
 			steal.dev.log("looking for fixture in " + url);
-			//@steal-remove-end
+			//!steal-remove-end
 			settings.url = url;
 			settings.data = null;
 			settings.type = "GET";
@@ -47,9 +50,9 @@ steal('jquery/dom',
 			}
 
 		}else {
-			//@steal-remove-start
+			//!steal-remove-start
 			steal.dev.log("using a dynamic fixture for " +settings.type+" "+ settings.url);
-			//@steal-remove-end
+			//!steal-remove-end
 			
 			//it's a function ... add the fixture datatype so our fixture transport handles it
 			// TODO: make everything go here for timing and other fun stuff
@@ -156,13 +159,13 @@ steal('jquery/dom',
 			//*/
 
 			if(id === undefined){
-                settings.url.replace(/\/(\d+)(\/|$)/g, function(all, num){
+                settings.url.replace(/\/(\d+)(\/|$|\.)/g, function(all, num){
                     id = num;
                 });
             }
 			
             if(id === undefined){
-                id = settings.url.replace(/\/(\w+)(\/|$)/g, function(all, num){
+                id = settings.url.replace(/\/(\w+)(\/|$|\.)/g, function(all, num){
                     if(num != 'update'){
                         id = num;
                     }
@@ -379,7 +382,7 @@ steal('jquery/dom',
 		if(fixture !== undefined){
 			if(typeof settings == 'string'){
 				// handle url strings
-				var matches = settings.match(/(GET|POST|PUT|DESTROY) (.+)/i);
+				var matches = settings.match(/(GET|POST|PUT|DELETE) (.+)/i);
 				if(!matches){
 					settings  = {
 						url : settings
@@ -426,9 +429,10 @@ steal('jquery/dom',
 		// gets data from a url like "/todo/{id}" given "todo/5"
 		_getData : function(fixtureUrl, url){
 			var order = [],
-				res = new RegExp(fixtureUrl.replace(replacer, function(whole, part){
+				fixtureUrlAdjusted = fixtureUrl.replace('.', '\\.').replace('?', '\\?'),
+				res = new RegExp(fixtureUrlAdjusted.replace(replacer, function(whole, part){
 			  		order.push(part)
-			 		 return "([^\/])+"
+			 		 return "([^\/]+)"
 				})+"$").exec(url),
 				data = {};
 			
@@ -465,8 +469,8 @@ steal('jquery/dom',
 		 * @hide
 		 * Provides a rest create fixture function
 		 */
-		"-restCreate": function( settings, cbType ) {
-			var id = parseInt(Math.random() * 100000, 10);
+		"-restCreate": function( settings, cbType, nul, id ) {
+			var id = id || parseInt(Math.random() * 100000, 10);
 			return [200,"succes",{
 						id: id
 					},{
@@ -585,7 +589,7 @@ steal('jquery/dom',
 
 
 				var offset = parseInt(settings.data.offset, 10) || 0,
-					limit = parseInt(settings.data.limit, 10) || (count - offset),
+					limit = parseInt(settings.data.limit, 10) || (items.length - offset),
 					i = 0;
 
 				//filter results if someone added an attr like parentId
@@ -651,6 +655,7 @@ steal('jquery/dom',
 			};
 			$.fixture["-" + types[1]+"Create"] = function( settings, cbType ) {
                 var item = make(items.length, items);
+				
 				$.extend(item, settings.data);
 				
 				if(!item.id){
@@ -658,7 +663,8 @@ steal('jquery/dom',
 				}
 				
 				items.push(item);
-				return $.fixture["-restCreate"](settings, cbType)
+				
+				return $.fixture["-restCreate"](settings, cbType, undefined, item.id );
 			};
 			
 			
@@ -892,4 +898,6 @@ steal('jquery/dom',
 	 *     }
 	 * 
 	 */
+	 //Expose this for fixture debugging
+	 $.fixture.overwrites = overwrites;
 });
